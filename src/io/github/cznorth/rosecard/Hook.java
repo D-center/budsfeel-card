@@ -23,7 +23,7 @@ import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
-/** 在欢律（com.oplus.melody）进程里为 Rose 耳机写入 mydevices 卡片，并接管卡片上的降噪点击。 */
+/** 在无线耳机（com.oplus.melody，别名欢律）进程里为 Rose 耳机写入 mydevices 卡片，并接管卡片上的降噪点击。 */
 public class Hook implements IXposedHookLoadPackage {
     static final String TAG = "RoseCard";
     static final String MELODY = "com.oplus.melody";
@@ -32,7 +32,7 @@ public class Hook implements IXposedHookLoadPackage {
 
     /** 卡片模式类型（melody 定义）→ 资源名后缀 / 图标名 */
     static final int T_CLOSE = 1, T_TRANS = 2, T_WEAK = 3, T_STRONG = 4, T_MID = 5;
-    /** 10 在欢律里是「自适应」，借来当 Rose 的透风（防风降噪）模式（面板文案由 hook 替换） */
+    /** 10 在无线耳机里是「自适应」，借来当 Rose 的透风（防风降噪）模式（面板文案由 hook 替换） */
     static final int T_WIND = 10;
     static final String WIND_LABEL = "透风";
     static final int[] TYPES = {T_CLOSE, T_TRANS, T_WEAK, T_MID, T_STRONG, T_WIND};
@@ -127,7 +127,7 @@ public class Hook implements IXposedHookLoadPackage {
             });
         } catch (Throwable t) { log("hook OneSpace failed " + t); }
         if (isMain) return;
-        // 面板降噪按钮：类型 10 欢律显示「自适应」，Rose 面板上改成「透风」
+        // 面板降噪按钮：类型 10 无线耳机显示「自适应」，Rose 面板上改成「透风」
         try {
             XposedHelpers.findAndHookMethod("com.oplus.melody.onespace.items.OneSpaceNoisePreference", cl, "i",
                     Context.class, int.class, android.graphics.drawable.Drawable.class, String.class, boolean.class,
@@ -208,7 +208,7 @@ public class Hook implements IXposedHookLoadPackage {
     static void openRoseLink(Object f) throws Exception {
         android.app.Activity a = (android.app.Activity) activityOf(f);
         Context c = a != null ? a : app;
-        // 欢律没声明 <queries>，查不到 RoseLink；显式组件启动不受包可见性限制
+        // 无线耳机没声明 <queries>，查不到 RoseLink；显式组件启动不受包可见性限制
         Intent it = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
                 .setClassName(ROSELINK, ROSELINK + ".MainActivity")
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
@@ -216,7 +216,7 @@ public class Hook implements IXposedHookLoadPackage {
         catch (Throwable t) { log("start RoseLink failed " + t); return; }
         if (a != null) a.finish();
     }
-    /** 同欢律自己的做法：经 HFP / A2DP profile 代理反射调用 disconnect(device)；失败则打开蓝牙设置。 */
+    /** 同无线耳机自己的做法：经 HFP / A2DP profile 代理反射调用 disconnect(device)；失败则打开蓝牙设置。 */
     static void disconnect(Object f) throws Exception {
         android.app.Activity a = (android.app.Activity) activityOf(f);
         BluetoothDevice d = findRose();

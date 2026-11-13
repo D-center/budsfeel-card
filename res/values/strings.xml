@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">BudsFeel 耳机卡片</string>
-    <string name="desc">把弱水时砂 BudsFeel Mk2 接入 ColorOS 原生耳机卡片（hook 欢律）</string>
+    <string name="desc">把弱水时砂 BudsFeel Mk2 接入 ColorOS 原生耳机卡片（hook 无线耳机 com.oplus.melody）</string>
     <string-array name="scope"><item>com.oplus.melody</item></string-array>
 </resources>
