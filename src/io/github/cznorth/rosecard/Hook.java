@@ -418,8 +418,9 @@ public class Hook implements IXposedHookLoadPackage {
             if (err != null) return;
             if (lv < 0) { curType = type; refreshAll(); return; }
             ble.setLevel(lv, (v2, err2) -> {
-                log("setLevel " + lv + " -> " + v2 + " err=" + err2);
-                if (err2 == null) curType = type;
+                // 自适应降噪机型（BudsFeel Mk2）可能不支持手动档位命令；setMode 已生效，忽略档位错误
+                if (err2 != null) log("setLevel unsupported, use adaptive ANC: " + err2);
+                curType = type;
                 refreshAll();
             });
         });
@@ -436,11 +437,15 @@ public class Hook implements IXposedHookLoadPackage {
         return null;
     }
 
-    /** 经典蓝牙名为「ROSE EARFREE i5」（也兼容 EarFeel 写法） */
+    /**
+     * 经典蓝牙名识别：i5 为「ROSE EARFREE i5」（兼容 EarFeel 写法），
+     * BudsFeel Mk2 为「ROSE BUDSFEEL ...」。同品牌均以 ROSE 开头，按系列关键字匹配。
+     */
     static boolean isRoseName(String n) {
         if (n == null) return false;
         String u = n.toUpperCase();
-        return u.startsWith("ROSE") && (u.contains("EARFREE") || u.contains("EARFEEL"));
+        if (!u.startsWith("ROSE")) return false;
+        return u.contains("EARFREE") || u.contains("EARFEEL") || u.contains("BUDSFEEL");
     }
 
     static String str(String n) {
@@ -458,7 +463,8 @@ public class Hook implements IXposedHookLoadPackage {
     static int typeOf(int mode, int level) {
         if (mode == 1) return T_CLOSE;
         if (mode == 3) return T_TRANS;
-        if (mode == 0) return level == 0 ? T_WEAK : level == 1 ? T_MID : T_STRONG;
+        // level < 0 表示读不到档位（自适应机型），统一归到弱降噪入口
+        if (mode == 0) return level == 1 ? T_MID : level == 2 ? T_STRONG : T_WEAK;
         if (mode == 2) return T_WIND;
         return -1;
     }
@@ -469,8 +475,9 @@ public class Hook implements IXposedHookLoadPackage {
         ble.readMode((m, err) -> {
             if (err != null) { log("readMode err=" + err); then.run(); return; }
             ble.readLevel((lv, err2) -> {
-                if (err2 == null) curType = typeOf(m, lv);
-                log("readState mode=" + m + " level=" + lv + " -> " + curType);
+                if (err2 != null) log("readLevel unsupported, adaptive ANC: " + err2);
+                curType = typeOf(m, err2 == null ? lv : -1);
+                log("readState mode=" + m + " level=" + (err2 == null ? lv : "?") + " -> " + curType);
                 ble.readBattery((n, err3) -> { if (err3 != null) log("readBattery err=" + err3); then.run(); });
             });
         });
@@ -491,7 +498,7 @@ public class Hook implements IXposedHookLoadPackage {
         long now = System.currentTimeMillis();
         String id = "rose_" + mac.replace(":", "").toLowerCase();
         JSONObject j = new JSONObject();
-        j.put("deviceId", id).put("macAddress", mac).put("name", name).put("modelId", "rose_earfeel_i5")
+        j.put("deviceId", id).put("macAddress", mac).put("name", name).put("modelId", "rose_budsfeel_mk2")
          .put("type", "HEADSET").put("mConnectState", "CONNECTED").put("useState", "USED")
          .put("isActive", true).put("mAuthority", AUTHORITY).put("associatedPackageName", MELODY)
          .put("mTemplateType", "MULTI_BATTERY").put("mTemplateList", new JSONArray())

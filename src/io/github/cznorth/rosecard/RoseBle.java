@@ -19,7 +19,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Rose EarFeel-i5 BLE control protocol (reverse-engineered from RoseLink 3.8.0).
+ * RoseLink BLE control protocol (reverse-engineered from RoseLink; platform protocol shared by
+ * Rose EarFeel i5 and BudsFeel Mk2).
  *
  * Request:  08 ee 00 00 00 GRP CMD LEN_LO LEN_HI PAYLOAD... SUM
  * Response: 09 ff 00 00 ST  GRP CMD LEN_LO LEN_HI PAYLOAD... SUM
@@ -27,6 +28,8 @@ import java.util.concurrent.TimeUnit;
  *   Set command = read command | 0x80.
  * 06 02 / 06 82: noise mode, 4 bytes one-hot [降噪, 普通, 风噪, 通透]
  * 06 07 / 06 87: ANC level, 1 byte 00 轻度 / 01 中度 / 02 深度
+ *   Note: BudsFeel Mk2 uses adaptive ANC; the level command may be rejected and is treated
+ *   as optional by the caller (mode switch still works).
  */
 public final class RoseBle {
     static final String TAG = "RoseCard";
